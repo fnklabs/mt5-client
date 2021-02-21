@@ -1,7 +1,6 @@
 package com.fnklabs.mt5.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.joda.time.DateTime;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -66,6 +65,9 @@ public class Mt5User {
 
     @JsonProperty("Equity")
     private BigDecimal equity;
+
+    @JsonProperty("Margin")
+    private BigDecimal margin;
 
     @JsonProperty("MarginFree")
     private BigDecimal marginFree;
@@ -136,27 +138,19 @@ public class Mt5User {
     }
 
     public BigDecimal getMargin() {
-        return marginFree;
+        return margin;
     }
 
-    public void setMargin(BigDecimal margin) {}
-
-    public BigDecimal getFreeMargin() {
-        return marginFree;
-    }
-
-    public void setFreeMargin(BigDecimal freeMargin) {}
-
-    public DateTime registrationDate() {
-        return new DateTime(getRegistrationDate().getTime());
-    }
-
-    public DateTime getLastDate() {
-        return null;
+    public void setMargin(BigDecimal margin) {
+        this.margin = margin;
     }
 
     public int getLeverage() {
         return leverage;
+    }
+
+    public void setLeverage(Integer leverage) {
+        this.leverage = leverage;
     }
 
     public String getFullname() {
@@ -167,16 +161,32 @@ public class Mt5User {
         return password;
     }
 
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     public String getCountry() {
         return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
     }
 
     public String getCity() {
         return city;
     }
 
+    public void setCity(String city) {
+        this.city = city;
+    }
+
     public String getState() {
         return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
     }
 
     public String getZipCode() {
@@ -187,12 +197,24 @@ public class Mt5User {
         return address;
     }
 
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
     public String getPhone() {
         return phone;
     }
 
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
     public String getEmail() {
         return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getComment() {
@@ -209,38 +231,6 @@ public class Mt5User {
 
     public void setGroup(String group) {
         this.group = group;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public void setState(String state) {
-        this.state = state;
-    }
-
-    public void setCity(String city) {
-        this.city = city;
-    }
-
-    public void setCountry(String country) {
-        this.country = country;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public void setLeverage(Integer leverage) {
-        this.leverage = leverage;
     }
 
     public String getFirstName() {

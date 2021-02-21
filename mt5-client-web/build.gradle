@@ -1,0 +1,18 @@
+dependencies {
+    compile project(":mt5-client-core")
+
+    implementation "org.apache.httpcomponents.client5:httpclient5:$vers.httpclient"
+    compile "joda-time:joda-time:$vers.jodatime"
+
+    compile "commons-codec:commons-codec:$vers.commonscodec"
+    compile "com.google.guava:guava:$vers.guava"
+    compile "com.fasterxml.jackson.core:jackson-databind:$vers.jackson"
+
+    compile "org.apache.commons:commons-lang3:$vers.lang3"
+    compile "org.apache.commons:commons-io:$vers.commonsio"
+
+    compile "org.slf4j:slf4j-api:$vers.slf4j"
+
+    compile "com.fnklabs:fnklabs-metrics-codahale:$vers.metrics"
+    compile "com.fnklabs:fnklabs-metrics-core:$vers.metrics"
+}

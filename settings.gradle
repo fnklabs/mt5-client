@@ -1,4 +1,5 @@
 rootProject.name = 'mt5-client'
 
 include 'mt5-client-core'
-
+include 'mt5-client-web'
+include 'mt5-client-raw'

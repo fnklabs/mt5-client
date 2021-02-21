@@ -8,7 +8,6 @@ import com.google.common.net.HostAndPort;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
@@ -20,15 +19,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-public class Mt5Client {
+public class RawMt5Api implements Mt5Api {
 
     public static final int HISTORY_GET_PAGE_LIMIT = 100;
 
-    private static final Logger log = LoggerFactory.getLogger(Mt5Client.class);
+    private static final Logger log = LoggerFactory.getLogger(RawMt5Api.class);
     private static final String AGENT = "fnklabs";
     private static final int VERSION = 2560;
     private final HostAndPort address;
@@ -39,7 +37,7 @@ public class Mt5Client {
     private final Marshaller marshaller = new RawApiMarshaller();
     private final ObjectMapper objectMapper;
 
-    public Mt5Client(String address, String username, String password, int color, ObjectMapper objectMapper) {
+    public RawMt5Api(String address, String username, String password, int color, ObjectMapper objectMapper) {
         this.address = HostAndPort.fromString(address);
         this.username = username;
         this.password = password;
@@ -56,8 +54,8 @@ public class Mt5Client {
             @Override
             public Session create() throws Exception {
 
-                log.debug("create session: {}", Mt5Client.this.address);
-                Session session = new Session(Mt5Client.this.address.getHost(), Mt5Client.this.address.getPort());
+                log.debug("create session: {}", RawMt5Api.this.address);
+                Session session = new Session(RawMt5Api.this.address.getHost(), RawMt5Api.this.address.getPort());
 
                 authenticate(session);
 
@@ -71,15 +69,51 @@ public class Mt5Client {
         }, poolConfig);
     }
 
+    @Override
+    public void close() throws Exception {}
 
-    public String create(Mt5User tradeAccount) throws TradeServerError {
-        int login = userAdd(tradeAccount);
+    @Override
+    public String userAdd(Mt5User tradeAccount) throws TradeServerError {
+        Map<String, String> params = ImmutableMap.<String, String>builder()
+                .put("login", "0")
+                .put("pass_main", tradeAccount.getPassword())
+                .put("pass_investor", tradeAccount.getPassword())
+                .put("pass_phone", "")
+                .put("right", "483")
+                .put("group", tradeAccount.getGroup())
+                .put("name", tradeAccount.getFullname())
+                .put("country", Optional.ofNullable(tradeAccount.getCountry()).orElse(StringUtils.EMPTY))
+                .put("city", Optional.ofNullable(tradeAccount.getCity()).orElse(StringUtils.EMPTY))
+                .put("state", Optional.ofNullable(tradeAccount.getState()).orElse(StringUtils.EMPTY))
+                .put("zipcode", Optional.ofNullable(tradeAccount.getZipCode()).orElse(StringUtils.EMPTY))
+                .put("address", Optional.ofNullable(tradeAccount.getAddress()).orElse(StringUtils.EMPTY))
+                .put("id", "")
+                .put("status", "")
+                .put("phone", Optional.ofNullable(tradeAccount.getPhone()).orElse(StringUtils.EMPTY))
+                .put("email", Optional.ofNullable(tradeAccount.getEmail()).orElse(StringUtils.EMPTY))
+                .put("comment", Optional.ofNullable(tradeAccount.getComment()).orElse(StringUtils.EMPTY))
+                .put("color", String.valueOf(color))
+                .put("leverage", String.valueOf(tradeAccount.getLeverage()))
+                .put("agent", "0")
+                .put("balance", "0")
+                .build();
 
-        return String.valueOf(login);
+        return evaluate(session -> {
+            byte[] responseData = execute("user_add", params);
+
+            Command cmd = marshaller.decode(responseData);
+
+            if (!cmd.isOk()) {
+                throw new TradeServerError(String.format("Can't execute request: `%s`", cmd));
+            }
+
+            return cmd.getParam("LOGIN");
+        });
     }
 
+    @Override
     public Mt5User info(String login) throws TradeServerError {
-        return evaluate(session -> {
+        Mt5User user = evaluate(session -> {
             Command userGetRequest = new Command("user_get", ImmutableMap.of("login", login));
             userGetRequest.setMessageId(session.nextId());
 
@@ -91,10 +125,11 @@ public class Mt5Client {
                 throw new TradeServerError(String.format("Can't get account info %s", login));
             }
 
-            Mt5User userInfo = objectMapper.readValue(response.getAdditionalData(), Mt5User.class);
+            return objectMapper.readValue(response.getAdditionalData(), Mt5User.class);
+        });
 
-
-            userGetRequest = new Command("user_account_get", ImmutableMap.of("login", login));
+        Mt5User accountInfo = evaluate(session -> {
+            Command userGetRequest = new Command("user_account_get", ImmutableMap.of("login", login));
             userGetRequest.setMessageId(session.nextId());
 
             session.write(marshaller.encode(userGetRequest));
@@ -105,23 +140,23 @@ public class Mt5Client {
                 throw new TradeServerError(String.format("Can't get account info %s", login));
             }
 
-            Mt5User mt5User = objectMapper.readValue(userDataResponse.getAdditionalData(), Mt5User.class);
-
-            userInfo.setMargin(mt5User.getMargin());
-            userInfo.setMarginFree(mt5User.getMarginFree());
-            userInfo.setFreeMargin(mt5User.getFreeMargin());
-            userInfo.setEquity(mt5User.getEquity());
-
-            return userInfo;
+            return objectMapper.readValue(userDataResponse.getAdditionalData(), Mt5User.class);
         });
 
+        user.setMargin(accountInfo.getMargin());
+        user.setMarginFree(accountInfo.getMarginFree());
+        user.setEquity(accountInfo.getEquity());
+        user.setBalance(accountInfo.getBalance());
 
+        return user;
     }
 
+    @Override
     public int deposit(String login, BigDecimal amount, String comment) throws TradeServerError {
         return balance(login, amount.abs(), comment);
     }
 
+    @Override
     public int withdraw(String login, BigDecimal amount, String comment) throws TradeServerError {
         return balance(login, amount.abs().negate(), comment);
     }
@@ -135,6 +170,7 @@ public class Mt5Client {
      *
      * @return Total closed orders in range for trade account
      */
+    @Override
     public List<Deal> getTradeHistory(String login, Date from, Date to) {
         int tradeHistoryCount = getTradeHistoryCount(login, from, to);
 
@@ -201,6 +237,11 @@ public class Mt5Client {
         });
     }
 
+    @Override
+    public byte[] cmd(String name, Map<String, String> params) throws TradeServerError {
+        return execute(name, params);
+    }
+
     /**
      * Send MT5 command and read response data
      *
@@ -209,7 +250,7 @@ public class Mt5Client {
      *
      * @return Packet data without header
      */
-    public byte[] execute(String command, Map<String, String> params) {
+    protected byte[] execute(String command, Map<String, String> params) {
         return evaluate(session -> {
             Command request = new Command(command, params);
             request.setMessageId(session.nextId());
@@ -221,6 +262,7 @@ public class Mt5Client {
             return session.read();
         });
     }
+
 
     /**
      * Get closed orders count for trade account for provided login in date range
@@ -321,6 +363,10 @@ public class Mt5Client {
     /**
      * Execute balance operation
      *
+     * @param login   TradeAccount login
+     * @param amount  Balance amount (positive to deposit, negative to withdraw)
+     * @param comment Balance operation comment
+     *
      * @return Ticket id
      */
     @VisibleForTesting
@@ -350,55 +396,6 @@ public class Mt5Client {
             return Integer.parseInt(cmdResponse.getParam("TICKET"));
         });
 
-    }
-
-    @VisibleForTesting
-    protected int userAdd(Mt5User tradeAccount) {
-        Map<String, String> params = ImmutableMap.<String, String>builder()
-                .put("login", "0")
-                .put("pass_main", tradeAccount.getPassword())
-                .put("pass_investor", tradeAccount.getPassword())
-                .put("pass_phone", "")
-                .put("right", "483")
-                .put("group", tradeAccount.getGroup())
-                .put("name", tradeAccount.getFullname())
-                .put("country", Optional.ofNullable(tradeAccount.getCountry()).orElse(StringUtils.EMPTY))
-                .put("city", Optional.ofNullable(tradeAccount.getCity()).orElse(StringUtils.EMPTY))
-                .put("state", Optional.ofNullable(tradeAccount.getState()).orElse(StringUtils.EMPTY))
-                .put("zipcode", Optional.ofNullable(tradeAccount.getZipCode()).orElse(StringUtils.EMPTY))
-                .put("address", Optional.ofNullable(tradeAccount.getAddress()).orElse(StringUtils.EMPTY))
-                .put("id", "")
-                .put("status", "")
-                .put("phone", Optional.ofNullable(tradeAccount.getPhone()).orElse(StringUtils.EMPTY))
-                .put("email", Optional.ofNullable(tradeAccount.getEmail()).orElse(StringUtils.EMPTY))
-                .put("comment", Optional.ofNullable(tradeAccount.getComment()).orElse(StringUtils.EMPTY))
-                .put("color", String.valueOf(color))
-                .put("leverage", String.valueOf(tradeAccount.getLeverage()))
-                .put("agent", "0")
-                .put("balance", "0")
-                .build();
-
-        return evaluate(session -> {
-            byte[] responseData = execute("user_add", params);
-
-            Command cmd = marshaller.decode(responseData);
-
-            if (!cmd.isOk()) {
-                throw new TradeServerError(String.format("Can't execute request: `%s`", cmd));
-            }
-
-            return Integer.parseInt(cmd.getParam("LOGIN"));
-
-        });
-
-
-    }
-
-    @VisibleForTesting
-    protected byte[] createSrvRandAnswer(String password, String srvRand) throws DecoderException {
-        byte[] passwordHash = ArrayUtils.addAll(DigestUtils.md5(password.getBytes(StandardCharsets.UTF_16LE)), "WebAPI".getBytes(StandardCharsets.UTF_8));
-
-        return DigestUtils.md5(ArrayUtils.addAll(DigestUtils.md5(passwordHash), Hex.decodeHex(srvRand)));
     }
 
     private <T> T evaluate(F<Session, T> userFunc) throws TradeServerError {

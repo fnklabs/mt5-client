@@ -7,7 +7,6 @@ class AuthAnswerResponse extends Mt5Response<Void> {
     @JsonProperty("cli_rand_answer")
     private String cliRandAnswer;
 
-
     public String getCliRandAnswer() {
         return cliRandAnswer;
     }

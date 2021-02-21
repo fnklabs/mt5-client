@@ -58,7 +58,7 @@ class Session implements AutoCloseable {
             log.debug("header msg size: {}/{} msg size: {}", msg, Hex.encodeHexString(msgSizeBytes), msgSize);
 
             ByteBuffer responseBuf = ByteBuffer.allocate(msgSize);
-            while (responseBuf.remaining() != 0) { // read header
+            while (responseBuf.remaining() != 0) { // read body data
                 getSocket().read(responseBuf);
             }
 
