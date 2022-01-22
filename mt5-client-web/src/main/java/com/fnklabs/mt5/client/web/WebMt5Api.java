@@ -1,5 +1,6 @@
 package com.fnklabs.mt5.client.web;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fnklabs.mt5.client.*;
 import org.apache.commons.codec.binary.Hex;
@@ -20,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.*;
@@ -44,8 +46,6 @@ public class WebMt5Api implements Mt5Api {
         this.password = password;
         this.client = httpClient;
         this.objectMapper = objectMapper;
-
-        auth(login, password);
     }
 
     public void auth(String login, String password) {
@@ -59,8 +59,7 @@ public class WebMt5Api implements Mt5Api {
                                                .addParameter("type", "manager")
                                                .build();
 
-            HttpGet request = new HttpGet(authStartUri);
-            AuthStartResponse authStartResponse = executeRequest(request, AuthStartResponse.class);
+            AuthStartResponse authStartResponse = executeRequest(new HttpGet(authStartUri), new TypeReference<AuthStartResponse>() {});
 
             byte[] srvRandAnswer = createSrvRandAnswer(password, authStartResponse.getSrvRand());
 
@@ -74,7 +73,7 @@ public class WebMt5Api implements Mt5Api {
 
             HttpGet authAnswerRequest = new HttpGet(answerUri);
 
-            AuthAnswerResponse authAnswerResponse = executeRequest(authAnswerRequest, AuthAnswerResponse.class);
+            AuthAnswerResponse authAnswerResponse = executeRequest(authAnswerRequest, new TypeReference<AuthAnswerResponse>() {});
 
 
         } catch (Exception e) {
@@ -100,7 +99,7 @@ public class WebMt5Api implements Mt5Api {
                                                             .build());
             request.setEntity(new StringEntity(objectMapper.writeValueAsString(user), ContentType.APPLICATION_JSON));
 
-            AddUserResponse response = executeRequest(request, AddUserResponse.class);
+            AddUserResponse response = authAndExecuteRequest(request, new TypeReference<AddUserResponse>() {});
 
             return response.getAnswer().getLogin();
         } catch (Exception e) {
@@ -116,7 +115,7 @@ public class WebMt5Api implements Mt5Api {
                                                                  .addParameter("login", login)
                                                                  .build());
 
-            UserGetResponse userGetResponse = executeRequest(userGetRequest, UserGetResponse.class);
+            UserGetResponse userGetResponse = authAndExecuteRequest(userGetRequest, new TypeReference<UserGetResponse>() {});
 
             Mt5User mt5User = userGetResponse.getUser();
 
@@ -125,7 +124,7 @@ public class WebMt5Api implements Mt5Api {
                                                                         .addParameter("login", login)
                                                                         .build());
 
-            UserGetResponse userAccountGetResponse = executeRequest(userAccountGetRequest, UserGetResponse.class);
+            UserGetResponse userAccountGetResponse = authAndExecuteRequest(userAccountGetRequest, new TypeReference<UserGetResponse>() {});
 
             mt5User.setBalance(userAccountGetResponse.getUser().getBalance());
             mt5User.setMargin(userAccountGetResponse.getUser().getMargin());
@@ -166,7 +165,7 @@ public class WebMt5Api implements Mt5Api {
                                                               .addParameter("total", String.valueOf(HISTORY_GET_PAGE_LIMIT))
                                                               .build());
 
-                GetDealsResponse dealsResponse = executeRequest(httpGet, GetDealsResponse.class);
+                GetDealsResponse dealsResponse = authAndExecuteRequest(httpGet, new TypeReference<GetDealsResponse>() {});
 
                 orders.addAll(dealsResponse.getDeals());
 
@@ -181,26 +180,8 @@ public class WebMt5Api implements Mt5Api {
         return orders;
     }
 
-    protected long getTradeHistoryTotal(String login, Date from, Date to) {
-        try {
-            HttpGet request = new HttpGet(new URIBuilder().setHttpHost(HttpHost.create(serverAddress))
-                                                          .setPath("/deal_get_total")
-                                                          .addParameter("login", login)
-                                                          .addParameter("from", String.valueOf(TimeUnit.MILLISECONDS.toSeconds(from.getTime())))
-                                                          .addParameter("to", String.valueOf(TimeUnit.MILLISECONDS.toSeconds(to.getTime())))
-                                                          .build());
-
-            GetDealsCountResponse response = executeRequest(request, GetDealsCountResponse.class);
-
-            return response.getTotalDeals().getTotal();
-
-        } catch (Exception e) {
-            throw new RequestExecutionException(e);
-        }
-    }
-
     @Override
-    public byte[] cmd(String name, Map<String, String> params) throws TradeServerError {
+    public <T> T cmd(String name, Map<String, String> params) throws TradeServerError {
 
 
         try {
@@ -214,9 +195,27 @@ public class WebMt5Api implements Mt5Api {
                                                           )
                                                           .build());
 
-            Response response = executeRequest(request, Response.class);
+            CmdResponse<T> response = authAndExecuteRequest(request, new TypeReference<CmdResponse<T>>() {});
 
-            return new byte[]{};
+            return response.getAnswer();
+
+        } catch (Exception e) {
+            throw new RequestExecutionException(e);
+        }
+    }
+
+    protected long getTradeHistoryTotal(String login, Date from, Date to) {
+        try {
+            HttpGet request = new HttpGet(new URIBuilder().setHttpHost(HttpHost.create(serverAddress))
+                                                          .setPath("/deal_get_total")
+                                                          .addParameter("login", login)
+                                                          .addParameter("from", String.valueOf(TimeUnit.MILLISECONDS.toSeconds(from.getTime())))
+                                                          .addParameter("to", String.valueOf(TimeUnit.MILLISECONDS.toSeconds(to.getTime())))
+                                                          .build());
+
+            GetDealsCountResponse response = authAndExecuteRequest(request, new TypeReference<GetDealsCountResponse>() {});
+
+            return response.getTotalDeals().getTotal();
 
         } catch (Exception e) {
             throw new RequestExecutionException(e);
@@ -224,8 +223,6 @@ public class WebMt5Api implements Mt5Api {
     }
 
     protected int balance(String login, BigDecimal amount, @Nullable String comment) throws TradeServerError {
-
-
         try {
             URI uri = new URIBuilder().setHttpHost(HttpHost.create(serverAddress))
                                       .setPath("/trade_balance")
@@ -238,7 +235,7 @@ public class WebMt5Api implements Mt5Api {
 
             HttpGet request = new HttpGet(uri);
 
-            BalanceResponse response = executeRequest(request, BalanceResponse.class);
+            BalanceResponse response = authAndExecuteRequest(request, new TypeReference<BalanceResponse>() {});
 
             return Integer.parseInt(response.getAnswer().getId());
 
@@ -247,20 +244,37 @@ public class WebMt5Api implements Mt5Api {
         }
     }
 
-    private <T extends Response> T executeRequest(ClassicHttpRequest request, Class<T> clazz) {
-        log.debug("request: {}", request);
+    private <T extends Response> T authAndExecuteRequest(ClassicHttpRequest request, TypeReference<T> typeReference) {
+        try {
+            URI authStartUri = new URIBuilder().setHttpHost(HttpHost.create(serverAddress))
+                                               .setPath("/test_access")
+                                               .build();
 
-        try (CloseableHttpResponse authAnswerResponse = client.execute(request)) {
-            if (authAnswerResponse.getCode() != HttpStatus.SC_OK) {
-                throw new RequestExecutionException(IOUtils.toString(authAnswerResponse.getEntity().getContent()));
+            try {
+                Response authStartResponse = executeRequest(new HttpGet(authStartUri), new TypeReference<Response>() {});
+            } catch (RequestExecutionException e) {
+                auth(login, password);
             }
 
-            String content = IOUtils.toString(authAnswerResponse.getEntity().getContent());
+            return executeRequest(request, typeReference);
+        } catch (Exception e) {
+            throw new TradeServerError(e);
+        }
+    }
+
+    private <T extends Response> T executeRequest(ClassicHttpRequest request, TypeReference<T> clazz) {
+        log.debug("request: {}", request);
+
+        try (CloseableHttpResponse httpResponse = client.execute(request)) {
+            if (httpResponse.getCode() != HttpStatus.SC_OK) {
+                throw new RequestExecutionException(IOUtils.toString(httpResponse.getEntity().getContent()));
+            }
+
+            String content = IOUtils.toString(httpResponse.getEntity().getContent());
 
             log.debug("response data: {}", content);
 
             T resp = objectMapper.readValue(content, clazz);
-
 
             if (!resp.isOk()) {
                 throw new RequestExecutionException("retrieve error");

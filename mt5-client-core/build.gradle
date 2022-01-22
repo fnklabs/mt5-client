@@ -1,9 +1,9 @@
 dependencies {
-    compile "commons-codec:commons-codec:$vers.commonscodec"
-    compile "com.google.guava:guava:$vers.guava"
-    compile "com.fasterxml.jackson.core:jackson-databind:$vers.jackson"
+    implementation "commons-codec:commons-codec:$vers.commonscodec"
+    implementation "com.google.guava:guava:$vers.guava"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$vers.jackson"
 
-    compile "org.apache.commons:commons-lang3:$vers.lang3"
+    implementation "org.apache.commons:commons-lang3:$vers.lang3"
 
-    compile "org.jetbrains:annotations:$vers.intellij"
+    implementation "org.jetbrains:annotations:$vers.intellij"
 }

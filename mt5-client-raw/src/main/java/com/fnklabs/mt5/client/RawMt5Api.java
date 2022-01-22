@@ -75,28 +75,28 @@ public class RawMt5Api implements Mt5Api {
     @Override
     public String userAdd(Mt5User tradeAccount) throws TradeServerError {
         Map<String, String> params = ImmutableMap.<String, String>builder()
-                .put("login", "0")
-                .put("pass_main", tradeAccount.getPassword())
-                .put("pass_investor", tradeAccount.getPassword())
-                .put("pass_phone", "")
-                .put("right", "483")
-                .put("group", tradeAccount.getGroup())
-                .put("name", tradeAccount.getFullname())
-                .put("country", Optional.ofNullable(tradeAccount.getCountry()).orElse(StringUtils.EMPTY))
-                .put("city", Optional.ofNullable(tradeAccount.getCity()).orElse(StringUtils.EMPTY))
-                .put("state", Optional.ofNullable(tradeAccount.getState()).orElse(StringUtils.EMPTY))
-                .put("zipcode", Optional.ofNullable(tradeAccount.getZipCode()).orElse(StringUtils.EMPTY))
-                .put("address", Optional.ofNullable(tradeAccount.getAddress()).orElse(StringUtils.EMPTY))
-                .put("id", "")
-                .put("status", "")
-                .put("phone", Optional.ofNullable(tradeAccount.getPhone()).orElse(StringUtils.EMPTY))
-                .put("email", Optional.ofNullable(tradeAccount.getEmail()).orElse(StringUtils.EMPTY))
-                .put("comment", Optional.ofNullable(tradeAccount.getComment()).orElse(StringUtils.EMPTY))
-                .put("color", String.valueOf(color))
-                .put("leverage", String.valueOf(tradeAccount.getLeverage()))
-                .put("agent", "0")
-                .put("balance", "0")
-                .build();
+                                                 .put("login", "0")
+                                                 .put("pass_main", tradeAccount.getPassword())
+                                                 .put("pass_investor", tradeAccount.getPassword())
+                                                 .put("pass_phone", "")
+                                                 .put("right", "483")
+                                                 .put("group", tradeAccount.getGroup())
+                                                 .put("name", tradeAccount.getFullname())
+                                                 .put("country", Optional.ofNullable(tradeAccount.getCountry()).orElse(StringUtils.EMPTY))
+                                                 .put("city", Optional.ofNullable(tradeAccount.getCity()).orElse(StringUtils.EMPTY))
+                                                 .put("state", Optional.ofNullable(tradeAccount.getState()).orElse(StringUtils.EMPTY))
+                                                 .put("zipcode", Optional.ofNullable(tradeAccount.getZipCode()).orElse(StringUtils.EMPTY))
+                                                 .put("address", Optional.ofNullable(tradeAccount.getAddress()).orElse(StringUtils.EMPTY))
+                                                 .put("id", "")
+                                                 .put("status", "")
+                                                 .put("phone", Optional.ofNullable(tradeAccount.getPhone()).orElse(StringUtils.EMPTY))
+                                                 .put("email", Optional.ofNullable(tradeAccount.getEmail()).orElse(StringUtils.EMPTY))
+                                                 .put("comment", Optional.ofNullable(tradeAccount.getComment()).orElse(StringUtils.EMPTY))
+                                                 .put("color", String.valueOf(color))
+                                                 .put("leverage", String.valueOf(tradeAccount.getLeverage()))
+                                                 .put("agent", "0")
+                                                 .put("balance", "0")
+                                                 .build();
 
         return evaluate(session -> {
             byte[] responseData = execute("user_add", params);
@@ -238,8 +238,9 @@ public class RawMt5Api implements Mt5Api {
     }
 
     @Override
-    public byte[] cmd(String name, Map<String, String> params) throws TradeServerError {
-        return execute(name, params);
+    public <T> T cmd(String name, Map<String, String> params) throws TradeServerError {
+        byte[] bytes = execute(name, params);
+        return null;
     }
 
     /**

@@ -1,6 +1,8 @@
 package com.fnklabs.mt5.client.web;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fnklabs.mt5.client.Deal;
@@ -14,6 +16,7 @@ import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.client5.http.ssl.TrustSelfSignedStrategy;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
+import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +29,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -34,9 +38,30 @@ class WebMt5ApiTest {
     private String address;
     private String username;
     private String password;
+
     private String group;
 
     private WebMt5Api webMt5Client;
+
+    @BeforeEach
+    public void setUp() throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException, JsonProcessingException {
+        address = System.getenv("MT5_HTTP_ADDRESS");
+        username = System.getenv("MT5_USERNAME");
+        password = System.getenv("MT5_PASSWORD");
+        group = System.getenv("MT5_GROUP");
+
+        CloseableHttpClient httpClient = getHttpClient();
+
+        ObjectMapper objectMapper = getObjectMapper();
+
+        webMt5Client = new WebMt5Api(
+                address,
+                username,
+                password,
+                httpClient,
+                objectMapper
+        );
+    }
 
     @Test
     public void auth() {
@@ -45,39 +70,13 @@ class WebMt5ApiTest {
 
     @Test
     public void create() {
-        Mt5User mt5User = new Mt5User();
-        mt5User.setGroup(group);
-        mt5User.setFirstName("John");
-        mt5User.setLastName("Doe");
-        mt5User.setLeverage(100);
-        mt5User.setPassword("Password1");
-        mt5User.setEmail("johndoe@example.com");
-        mt5User.setPhone("70000000000");
-        mt5User.setCountry("Russia");
-        mt5User.setCity("Moscow");
-        mt5User.setState("Moscow");
-        mt5User.setZip("11111");
-        mt5User.setAddress("Str 12");
-        mt5User.setComment("test");
+        Mt5User mt5User = getMt5User();
         webMt5Client.userAdd(mt5User);
     }
 
     @Test
     public void info() {
-        Mt5User mt5User = new Mt5User();
-        mt5User.setGroup(group);
-        mt5User.setFirstName("John");
-        mt5User.setLastName("Doe");
-        mt5User.setLeverage(100);
-        mt5User.setPassword("Password1");
-        mt5User.setEmail("johndoe@example.com");
-        mt5User.setPhone("70000000000");
-        mt5User.setCountry("Russia");
-        mt5User.setCity("Moscow");
-        mt5User.setState("Moscow");
-        mt5User.setZip("11111");
-        mt5User.setAddress("Str 12");
-        mt5User.setComment("test");
+        Mt5User mt5User = getMt5User();
 
         String login = webMt5Client.userAdd(mt5User);
 
@@ -124,20 +123,7 @@ class WebMt5ApiTest {
 
     @Test
     public void tradeHistory() {
-        Mt5User mt5User = new Mt5User();
-        mt5User.setGroup(group);
-        mt5User.setFirstName("John");
-        mt5User.setLastName("Doe");
-        mt5User.setLeverage(100);
-        mt5User.setPassword("Password1");
-        mt5User.setEmail("johndoe@example.com");
-        mt5User.setPhone("70000000000");
-        mt5User.setCountry("Russia");
-        mt5User.setCity("Moscow");
-        mt5User.setState("Moscow");
-        mt5User.setZip("11111");
-        mt5User.setAddress("Str 12");
-        mt5User.setComment("test");
+        Mt5User mt5User = getMt5User();
 
         String login = webMt5Client.userAdd(mt5User);
 
@@ -157,24 +143,23 @@ class WebMt5ApiTest {
         assertEquals(100, tradeHistoryAfterDeposit.get(0).getAmount().doubleValue());
     }
 
-    @BeforeEach
-    void setUp() throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
-        address = System.getenv("MT5_HTTP_ADDRESS");
-        username = System.getenv("MT5_USERNAME");
-        password = System.getenv("MT5_PASSWORD");
-        group = System.getenv("MT5_GROUP");
-
-        CloseableHttpClient httpClient = getHttpClient();
-
-        ObjectMapper objectMapper = getObjectMapper();
-
-        webMt5Client = new WebMt5Api(
-                address,
-                username,
-                password,
-                httpClient,
-                objectMapper
-        );
+    @NotNull
+    private Mt5User getMt5User() {
+        Mt5User mt5User = new Mt5User();
+        mt5User.setGroup(group);
+        mt5User.setFirstName("John");
+        mt5User.setLastName("Doe");
+        mt5User.setLeverage(100);
+        mt5User.setPassword("Password1");
+        mt5User.setEmail("johndoe@example.com");
+        mt5User.setPhone("70000000000");
+        mt5User.setCountry("Russia");
+        mt5User.setCity("Moscow");
+        mt5User.setState("Moscow");
+        mt5User.setZip("11111");
+        mt5User.setAddress("Str 12");
+        mt5User.setComment("test");
+        return mt5User;
     }
 
     @AfterEach

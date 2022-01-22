@@ -85,11 +85,11 @@ public interface Mt5Api extends AutoCloseable {
      * @param name   command name
      * @param params Command parameters
      *
-     * @return byte result from response
+     * @return Deserialized result from response
      *
      * @throws TradeServerError on request execute error
      */
-    byte[] cmd(String name, Map<String, String> params) throws TradeServerError;
+    <T> T cmd(String name, Map<String, String> params) throws TradeServerError;
 
     /**
      * Create srv rand
