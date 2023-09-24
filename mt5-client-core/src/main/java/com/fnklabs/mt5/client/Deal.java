@@ -15,6 +15,30 @@ public class Deal {
     @JsonProperty("Action")
     private DealAction action;
 
+    @JsonProperty("Symbol")
+    private String symbol;
+
+    @JsonProperty("Volume")
+    private int volume;
+
+    public String getSymbol() {
+        return symbol;
+    }
+
+    public Deal setSymbol(String symbol) {
+        this.symbol = symbol;
+        return this;
+    }
+
+    public int getVolume() {
+        return volume;
+    }
+
+    public Deal setVolume(int volume) {
+        this.volume = volume;
+        return this;
+    }
+
     public DealAction getAction() {
         return action;
     }

@@ -75,6 +75,12 @@ class WebMt5ApiTest {
     }
 
     @Test
+    public void infoForUknownAccount() {
+
+        Mt5User info = webMt5Client.info("000");
+    }
+
+    @Test
     public void info() {
         Mt5User mt5User = getMt5User();
 
