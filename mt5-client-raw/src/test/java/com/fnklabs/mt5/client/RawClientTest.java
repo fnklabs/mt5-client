@@ -54,7 +54,7 @@ public class RawClientTest {
         doReturn("John").when(tradeAccount).getFullname();
         Mockito.doReturn(Timestamp.from(new Date().toInstant())).when(tradeAccount).getRegistrationDate();
         doReturn(100).when(tradeAccount).getLeverage();
-        doReturn("Password1").when(tradeAccount).getPassword();
+        doReturn("Password1$").when(tradeAccount).getPassword();
         doReturn("Russia").when(tradeAccount).getCountry();
         doReturn("Moscow").when(tradeAccount).getCity();
         doReturn("Moscow").when(tradeAccount).getState();

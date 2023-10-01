@@ -21,7 +21,6 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.*;
@@ -52,7 +51,7 @@ public class WebMt5Api implements Mt5Api {
 
         try {
             URI authStartUri = new URIBuilder().setHttpHost(HttpHost.create(serverAddress))
-                                               .setPath("/auth_start")
+                                               .setPath("/api/auth/start")
                                                .addParameter("version", String.valueOf(VERSION))
                                                .setParameter("agent", AGENT)
                                                .addParameter("login", login)
@@ -66,7 +65,7 @@ public class WebMt5Api implements Mt5Api {
             byte[] clientRandAnswer = DigestUtils.md5(DigestUtils.md5(UUID.randomUUID().toString()));
 
             URI answerUri = new URIBuilder().setHttpHost(HttpHost.create(serverAddress))
-                                            .setPath("/auth_answer")
+                                            .setPath("/api/auth/answer")
                                             .addParameter("srv_rand_answer", Hex.encodeHexString(srvRandAnswer))
                                             .addParameter("cli_rand", Hex.encodeHexString(clientRandAnswer))
                                             .build();
@@ -90,7 +89,7 @@ public class WebMt5Api implements Mt5Api {
     public String userAdd(Mt5User user) throws TradeServerError {
         try {
             HttpPost request = new HttpPost(new URIBuilder().setHttpHost(HttpHost.create(serverAddress))
-                                                            .setPath("/user_add")
+                                                            .setPath("/api/user/add")
                                                             .addParameter("pass_main", user.getPassword())
                                                             .addParameter("pass_investor", user.getPassword())
                                                             .addParameter("group", user.getGroup())
@@ -111,7 +110,7 @@ public class WebMt5Api implements Mt5Api {
     public Mt5User info(String login) throws TradeServerError {
         try {
             HttpGet userGetRequest = new HttpGet(new URIBuilder().setHttpHost(HttpHost.create(serverAddress))
-                                                                 .setPath("/user_get")
+                                                                 .setPath("/api/user/get")
                                                                  .addParameter("login", login)
                                                                  .build());
 
@@ -120,7 +119,7 @@ public class WebMt5Api implements Mt5Api {
             Mt5User mt5User = userGetResponse.getUser();
 
             HttpGet userAccountGetRequest = new HttpGet(new URIBuilder().setHttpHost(HttpHost.create(serverAddress))
-                                                                        .setPath("/user_account_get")
+                                                                        .setPath("/api/user/account/get")
                                                                         .addParameter("login", login)
                                                                         .build());
 
@@ -157,7 +156,7 @@ public class WebMt5Api implements Mt5Api {
         for (int offset = 0; offset < totalDeals; offset += HISTORY_GET_PAGE_LIMIT) {
             try {
                 HttpGet httpGet = new HttpGet(new URIBuilder().setHttpHost(HttpHost.create(serverAddress))
-                                                              .setPath("/deal_get_page")
+                                                              .setPath("/api/deal/get_page")
                                                               .addParameter("login", login)
                                                               .addParameter("from", String.valueOf(TimeUnit.MILLISECONDS.toSeconds(from.getTime())))
                                                               .addParameter("to", String.valueOf(TimeUnit.MILLISECONDS.toSeconds(to.getTime())))
@@ -207,7 +206,7 @@ public class WebMt5Api implements Mt5Api {
     protected long getTradeHistoryTotal(String login, Date from, Date to) {
         try {
             HttpGet request = new HttpGet(new URIBuilder().setHttpHost(HttpHost.create(serverAddress))
-                                                          .setPath("/deal_get_total")
+                                                          .setPath("/api/deal/get_total")
                                                           .addParameter("login", login)
                                                           .addParameter("from", String.valueOf(TimeUnit.MILLISECONDS.toSeconds(from.getTime())))
                                                           .addParameter("to", String.valueOf(TimeUnit.MILLISECONDS.toSeconds(to.getTime())))
@@ -225,7 +224,7 @@ public class WebMt5Api implements Mt5Api {
     protected int balance(String login, BigDecimal amount, @Nullable String comment) throws TradeServerError {
         try {
             URI uri = new URIBuilder().setHttpHost(HttpHost.create(serverAddress))
-                                      .setPath("/trade_balance")
+                                      .setPath("/api/trade/balance")
                                       .setParameter("login", login)
                                       .setParameter("type", String.valueOf(DealAction.DEAL_BALANCE.getCode()))
                                       .setParameter("balance", amount.toString())
@@ -247,7 +246,7 @@ public class WebMt5Api implements Mt5Api {
     private <T extends Response> T authAndExecuteRequest(ClassicHttpRequest request, TypeReference<T> typeReference) {
         try {
             URI authStartUri = new URIBuilder().setHttpHost(HttpHost.create(serverAddress))
-                                               .setPath("/test_access")
+                                               .setPath("/api/test/access")
                                                .build();
 
             try {
@@ -277,7 +276,7 @@ public class WebMt5Api implements Mt5Api {
             T resp = objectMapper.readValue(content, clazz);
 
             if (!resp.isOk()) {
-                throw new RequestExecutionException("retrieve error");
+                throw new RequestExecutionException("retrieve error: \"%s\"".formatted(resp.getRetCode()));
             }
 
             return resp;

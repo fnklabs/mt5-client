@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fnklabs.mt5.client.Deal;
 import com.fnklabs.mt5.client.DealAction;
 import com.fnklabs.mt5.client.Mt5User;
+import com.fnklabs.mt5.client.RequestExecutionException;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
@@ -19,6 +20,7 @@ import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -76,8 +78,9 @@ class WebMt5ApiTest {
 
     @Test
     public void infoForUknownAccount() {
-
-        Mt5User info = webMt5Client.info("000");
+        Assertions.assertThrows(RequestExecutionException.class, () -> {
+            Mt5User info = webMt5Client.info("12333123123");
+        });
     }
 
     @Test
@@ -156,7 +159,7 @@ class WebMt5ApiTest {
         mt5User.setFirstName("John");
         mt5User.setLastName("Doe");
         mt5User.setLeverage(100);
-        mt5User.setPassword("Password1");
+        mt5User.setPassword("Password1$");
         mt5User.setEmail("johndoe@example.com");
         mt5User.setPhone("70000000000");
         mt5User.setCountry("Russia");

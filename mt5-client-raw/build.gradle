@@ -13,6 +13,4 @@ dependencies {
 
     implementation "org.slf4j:slf4j-api:$vers.slf4j"
 
-    implementation "com.fnklabs:fnklabs-metrics-codahale:$vers.metrics"
-    implementation "com.fnklabs:fnklabs-metrics-core:$vers.metrics"
 }
